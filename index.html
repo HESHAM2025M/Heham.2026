@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="SNHR Poster">
+    <meta name="apple-mobile-web-app-title" content="SNHR Poster">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>مولد ملصقات SNHR</title>
+    
+    <!-- تحميل مكتبة React و ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- تحميل Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- تحميل html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- تحميل الخطوط -->
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&family=Changa:wght@400;700&family=El+Messiri:wght@400;700&family=Lateef&family=Lemonada:wght@400;700&family=Mada:wght@400;700&family=Reem+Kufi:wght@400;700&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; overscroll-behavior: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* خلفية السجن */
+        .bg-prison {
+            background-image: url('https://cdn.pixabay.com/photo/2017/08/02/18/20/prison-cell-2571164_1280.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: grayscale(100%) brightness(0.3);
+        }
+        
+        .draggable { cursor: move; position: absolute; z-index: 40; touch-action: none; }
+        .draggable:active { outline: 2px dashed #3b82f6; }
+        
+        /* تحسينات المدخلات للموبايل لمنع التكبير التلقائي */
+        input[type="text"], input[type="number"], textarea {
+            font-size: 16px !important; 
+        }
+        
+        /* مؤشر التحجيم */
+        .resizable-handle {
+            position: absolute; width: 30px; height: 30px; /* تكبير المقبض للموبايل */
+            background-color: #3b82f6; border: 3px solid #fff; border-radius: 50%;
+            z-index: 60; touch-action: none;
+        }
+        .resizable-handle.bottom-right { bottom: -15px; right: -15px; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        @media print { .print\:hidden { display: none !important; } }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- أيقونات ---
+        const Icons = {
+            Camera: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+            Download: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            Type: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>,
+            Palette: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>,
+            Image: ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
+        };
+
+        const DraggableElement = ({ id, children, offsets, onStart, className, style, isResizable, isAbsolute = false }) => {
+            const offset = offsets[id] || { x: 0, y: 0 };
+            return (
+                <div 
+                    onMouseDown={(e) => onStart(e, id, 'drag')}
+                    onTouchStart={(e) => onStart(e, id, 'drag')}
+                    className={`${isAbsolute ? 'draggable' : 'relative'} ${className || ''}`}
+                    style={{
+                        ...style,
+                        transform: `translate(${offset.x}px, ${offset.y}px)`,
+                        cursor: 'move',
+                        touchAction: 'none'
+                    }}
+                >
+                    {children}
+                    {isResizable && (
+                        <div 
+                            className="resizable-handle bottom-right" 
+                            onMouseDown={(e) => { e.stopPropagation(); onStart(e, id, 'resize'); }}
+                            onTouchStart={(e) => { e.stopPropagation(); onStart(e, id, 'resize'); }}
+                        ></div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [texts, setTexts] = useState({
+                title: "مختطفون يواجهون حكم الإعدام",
+                name: "أدخل نص",
+                number: "00",
+                unit: "#منسيون_خلف_القضبان",
+                desc: "أدخل البيانات",
+                footer: "عشرة أعوام من الإختطاف والجريمة مستمرة",
+            });
+            
+            const [colors, setColors] = useState({
+                titleText: "#1e3a8a", titleBg: "#eab308", nameText: "#1e3a8a",
+                numberText: "#1e3a8a", unitBg: "#eab308", unitText: "#1e3a8a",
+                descText: "#475569", footerBg: "#0ea5e9", footerText: "#ffffff",
+            });
+
+            const [fonts, setFonts] = useState({
+                header: 'Cairo', title: 'Cairo', name: 'Cairo', number: 'Cairo',
+                unit: 'Cairo', desc: 'Cairo', footer: 'Cairo'
+            });
+
+            const [mainImage, setMainImage] = useState(null);
+            const [posterBg, setPosterBg] = useState(null); 
+            const [headerLogo, setHeaderLogo] = useState(null);
+            const [headerLogoSize, setHeaderLogoSize] = useState(150);
+            const [activeTab, setActiveTab] = useState('data'); 
+            const [isDownloading, setIsDownloading] = useState(false);
+
+            const [offsets, setOffsets] = useState({});
+            const [dragState, setDragState] = useState(null); 
+            const [resizeState, setResizeState] = useState(null);
+
+            const fileInputRef = useRef(null);
+            const posterBgInputRef = useRef(null);
+            const headerLogoInputRef = useRef(null);
+
+            const getClientCoordinates = (e) => {
+                if (e.touches && e.touches.length > 0) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+                return { clientX: e.clientX, clientY: e.clientY };
+            };
+
+            const handleStart = (e, id, type) => {
+                // منع التمرير فقط إذا كان الحدث لمس
+                if(e.type === 'touchstart') {
+                   // e.preventDefault(); // يمكن تفعيل هذا إذا كانت هناك مشاكل في السحب
+                }
+                const coords = getClientCoordinates(e);
+                if (type === 'drag') {
+                    setDragState({ id, startX: coords.clientX, startY: coords.clientY, initialX: offsets[id]?.x || 0, initialY: offsets[id]?.y || 0 });
+                } else if (type === 'resize') {
+                    setResizeState({ id, startX: coords.clientX, initialWidth: headerLogoSize });
+                }
+            };
+
+            useEffect(() => {
+                const handleMove = (e) => {
+                    if (!dragState && !resizeState) return;
+                    e.preventDefault(); // منع حركة الصفحة أثناء سحب العنصر
+
+                    const coords = getClientCoordinates(e);
+                    if (dragState) {
+                        const dx = coords.clientX - dragState.startX;
+                        const dy = coords.clientY - dragState.startY;
+                        setOffsets(prev => ({ ...prev, [dragState.id]: { x: dragState.initialX + dx, y: dragState.initialY + dy } }));
+                    } else if (resizeState) {
+                        const dx = coords.clientX - resizeState.startX;
+                        setHeaderLogoSize(Math.max(40, resizeState.initialWidth + dx));
+                    }
+                };
+
+                const handleEnd = () => { setDragState(null); setResizeState(null); };
+
+                if (dragState || resizeState) {
+                    window.addEventListener('mousemove', handleMove);
+                    window.addEventListener('mouseup', handleEnd);
+                    window.addEventListener('touchmove', handleMove, { passive: false }); 
+                    window.addEventListener('touchend', handleEnd);
+                }
+                return () => {
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('mouseup', handleEnd);
+                    window.removeEventListener('touchmove', handleMove);
+                    window.removeEventListener('touchend', handleEnd);
+                };
+            }, [dragState, resizeState]);
+
+            const handleDownload = async () => {
+                const canvasElement = document.getElementById('poster-canvas');
+                if (!canvasElement) return;
+                setIsDownloading(true);
+                try {
+                    const canvas = await html2canvas(canvasElement, { scale: 3, useCORS: true, allowTaint: true, logging: false });
+                    const image = canvas.toDataURL("image/png", 1.0);
+                    const timestamp = new Date().getTime();
+                    // الاسم المطلوب
+                    const filename = `HESHAM-${timestamp}.png`;
+                    
+                    const link = document.createElement("a");
+                    link.href = image;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) { alert("حدث خطأ أثناء الحفظ"); } 
+                finally { setIsDownloading(false); }
+            };
+
+            const handleImageUpload = (e, setter) => {
+                if (e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setter(reader.result);
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            };
+
+            const fontOptions = ['Cairo','Tajawal','Amiri','Lateef','Almarai','El Messiri','Lemonada','Reem Kufi','Changa','Mada'].map(f => ({name: f, label: f}));
+
+            return (
+                <div className="flex flex-col h-full bg-gray-100" dir="rtl">
+                    {/* Header */}
+                    <div className="bg-white p-3 shadow-sm z-20 flex justify-between items-center shrink-0">
+                        <h1 className="font-bold text-gray-800 text-sm md:text-lg">مولد الملصقات</h1>
+                        <button onClick={handleDownload} disabled={isDownloading} className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow flex items-center gap-2">
+                            {isDownloading ? 'جاري الحفظ...' : <span>حفظ الصورة <Icons.Download className="w-4 h-4 inline"/></span>}
+                        </button>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
+                        
+                        {/* Preview Area */}
+                        <div className="flex-1 bg-gray-200 overflow-auto flex items-center justify-center p-4 lg:order-2">
+                             <div 
+                                id="poster-canvas"
+                                className="relative bg-white shadow-2xl overflow-hidden flex flex-col text-center select-none w-full max-w-[500px] aspect-square"
+                                style={{ fontFamily: fonts.header }}
+                            >
+                                {posterBg ? (
+                                    <div className="absolute inset-0 z-0 pointer-events-none" style={{ backgroundImage: `url(${posterBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'grayscale(100%) brightness(0.4)' }}></div>
+                                ) : (
+                                    <div className="absolute inset-0 bg-prison opacity-80 z-0 pointer-events-none"></div>
+                                )}
+                                
+                                {headerLogo && (
+                                    <DraggableElement id="headerLogo" offsets={offsets} onStart={handleStart} isResizable={true} isAbsolute={true} style={{ width: `${headerLogoSize}px`, top: '20px', left: '50%', marginLeft: `-${headerLogoSize / 2}px` }}>
+                                        <img src={headerLogo} className="w-full h-auto drop-shadow-sm select-none" draggable="false" />
+                                    </DraggableElement>
+                                )}
+                                <div className="h-[15%]"></div>
+                                
+                                <DraggableElement id="title" offsets={offsets} onStart={handleStart} className="relative z-20 w-full flex justify-center mt-2 pointer-events-auto">
+                                    <div className="px-6 py-2 transform -skew-x-12 shadow-sm" style={{ backgroundColor: colors.titleBg }}>
+                                        <h2 className="text-lg md:text-xl font-black transform skew-x-12 leading-none" style={{ color: colors.titleText, fontFamily: fonts.title }}>{texts.title}</h2>
+                                    </div>
+                                </DraggableElement>
+
+                                <DraggableElement id="name" offsets={offsets} onStart={handleStart} className="relative z-20 w-full mt-2 pointer-events-auto">
+                                    <h3 className="text-2xl md:text-4xl font-extrabold leading-tight" style={{ color: colors.nameText, fontFamily: fonts.name }}>{texts.name}</h3>
+                                </DraggableElement>
+
+                                <div className="relative flex-1 w-full flex items-center justify-center -mt-4">
+                                     <DraggableElement id="number" offsets={offsets} onStart={handleStart} isAbsolute={true} style={{top: '50%', left: '50%', transform: `translate(-50%, -50%) translate(${offsets.number?.x || 0}px, ${offsets.number?.y || 0}px)`}} className="z-10 w-full pointer-events-auto">
+                                        <span className="font-black text-[120px] opacity-90 leading-none drop-shadow-sm block" style={{ color: colors.numberText, fontFamily: fonts.number }}>{texts.number}</span>
+                                    </DraggableElement>
+
+                                    <DraggableElement id="unit" offsets={offsets} onStart={handleStart} isAbsolute={true} style={{left: '20px', bottom: '10px'}} className="z-30 pointer-events-auto">
+                                        <div className="px-3 py-1 transform -rotate-12 skew-x-6 shadow-md" style={{ backgroundColor: colors.unitBg }}>
+                                            <span className="text-sm font-black block transform skew-x-[-6deg]" style={{ color: colors.unitText, fontFamily: fonts.unit }}>{texts.unit}</span>
+                                        </div>
+                                    </DraggableElement>
+
+                                    <DraggableElement id="mainImage" offsets={offsets} onStart={handleStart} className="relative z-20 w-40 h-40 md:w-56 md:h-56 mt-4 rounded-full border-[5px] border-white shadow-xl bg-gray-200 overflow-hidden pointer-events-auto">
+                                        {mainImage ? <img src={mainImage} className="w-full h-full object-cover scale-110" draggable="false" /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Icons.Image className="w-8 h-8"/></div>}
+                                    </DraggableElement>
+
+                                    <DraggableElement id="desc" offsets={offsets} onStart={handleStart} isAbsolute={true} style={{right: '10px', top: '55%'}} className="w-[35%] text-right z-30 pointer-events-auto">
+                                        <p className="text-[10px] font-bold leading-relaxed bg-white/80 p-2 rounded shadow backdrop-blur-sm" style={{ color: colors.descText, fontFamily: fonts.desc }}>{texts.desc}</p>
+                                    </DraggableElement>
+                                </div>
+
+                                <div className="relative z-30 mt-auto w-full py-2" style={{ backgroundColor: colors.footerBg }}>
+                                    <span className="text-xs font-light" style={{ color: colors.footerText, fontFamily: fonts.footer }}>{texts.footer}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Controls Area (Bottom Sheet Style for Mobile) */}
+                        <div className="bg-white shadow-[0_-5px_15px_rgba(0,0,0,0.1)] lg:shadow-none lg:w-96 lg:border-r z-30 flex flex-col lg:order-1 h-[45%] lg:h-full">
+                            <div className="flex border-b text-sm font-bold bg-gray-50 shrink-0">
+                                {['data', 'style', 'images'].map(tab => (
+                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 border-b-2 ${activeTab === tab ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500'}`}>
+                                        {tab === 'data' ? 'البيانات' : tab === 'style' ? 'الألوان' : 'الصور'}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-20 lg:pb-4">
+                                {activeTab === 'data' && (
+                                    <div className="space-y-3">
+                                        <input type="text" placeholder="العنوان" value={texts.title} onChange={(e) => setTexts({...texts, title: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                        <input type="text" placeholder="الاسم" value={texts.name} onChange={(e) => setTexts({...texts, name: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                        <div className="flex gap-2">
+                                            <input type="text" placeholder="الرقم" value={texts.number} onChange={(e) => setTexts({...texts, number: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                            <input type="text" placeholder="الوحدة" value={texts.unit} onChange={(e) => setTexts({...texts, unit: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                        </div>
+                                        <textarea rows="2" placeholder="الوصف" value={texts.desc} onChange={(e) => setTexts({...texts, desc: e.target.value})} className="w-full p-2 border rounded text-sm resize-none"></textarea>
+                                        <input type="text" placeholder="الفوتر" value={texts.footer} onChange={(e) => setTexts({...texts, footer: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                    </div>
+                                )}
+                                {activeTab === 'style' && (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500">الخطوط</label>
+                                            <select value={fonts.title} onChange={(e) => setFonts({...fonts, title: e.target.value})} className="w-full p-2 border rounded text-sm bg-white">
+                                                {fontOptions.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {Object.entries(colors).map(([key, val]) => (
+                                                <div key={key} className="text-center">
+                                                    <input type="color" value={val} onChange={(e) => setColors({...colors, [key]: e.target.value})} className="w-8 h-8 rounded border-none p-0 cursor-pointer" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === 'images' && (
+                                    <div className="space-y-4">
+                                        <button onClick={() => fileInputRef.current.click()} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 text-sm hover:bg-gray-50">رفع صورة شخصية</button>
+                                        <input type="file" ref={fileInputRef} onChange={(e) => handleImageUpload(e, setMainImage)} hidden />
+                                        
+                                        <button onClick={() => posterBgInputRef.current.click()} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 text-sm hover:bg-gray-50">تغيير الخلفية</button>
+                                        <input type="file" ref={posterBgInputRef} onChange={(e) => handleImageUpload(e, setPosterBg)} hidden />
+                                        
+                                        <button onClick={() => headerLogoInputRef.current.click()} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-lg text-blue-500 text-sm bg-blue-50">رفع شعار (Header)</button>
+                                        <input type="file" ref={headerLogoInputRef} onChange={(e) => handleImageUpload(e, setHeaderLogo)} hidden />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
