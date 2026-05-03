@@ -3,80 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎨 محرر إطار حرية الصحافة</title>
+<title>🎨 محرر حرية الصحافة</title>
 
 <style>
 body {
-  font-family: Arial;
+  margin: 0;
+  font-family: "Segoe UI", Arial;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: white;
   text-align: center;
-  background: #f0f2f5;
-  padding: 10px;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 10px;
 }
 
 canvas {
-  border: 2px solid #ccc;
+  width: 100%;
+  border-radius: 15px;
   margin-top: 10px;
-  touch-action: none;
+  background: #000;
 }
 
 .controls {
-  margin-top: 10px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 15px;
 }
 
-input, button {
-  margin: 5px;
-  padding: 8px;
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
 }
 
 input[type=range] {
-  width: 200px;
+  width: 100%;
+}
+
+input[type=text] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 5px;
+}
+
+button {
+  margin-top: 15px;
+  padding: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: #00c6ff;
+  color: black;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #00a2cc;
+}
+
+.footer {
+  margin-top: 15px;
+  font-size: 13px;
+  opacity: 0.8;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🎨 صمّم صورتك</h2>
+<div class="container">
 
-<input type="file" id="upload" accept="image/*"><br>
+<h2>📸 إطار اليوم العالمي لحرية الصحافة</h2>
+
+<input type="file" id="upload" accept="image/*">
 
 <canvas id="canvas" width="500" height="500"></canvas>
 
 <div class="controls">
 
-<p>🔍 التكبير</p>
+<label>🔍 التكبير</label>
 <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1">
 
-<p>🔄 التدوير</p>
+<label>🔄 التدوير</label>
 <input type="range" id="rotate" min="0" max="360" value="0">
 
-<p>☀️ السطوع</p>
+<label>☀️ السطوع</label>
 <input type="range" id="brightness" min="50" max="150" value="100">
 
-<p>🎨 التباين</p>
+<label>🎨 التباين</label>
 <input type="range" id="contrast" min="50" max="150" value="100">
 
-<p>🖤 أبيض وأسود</p>
+<label>🖤 أبيض وأسود</label>
 <input type="checkbox" id="grayscale">
 
-<p>✍️ إضافة نص</p>
+<label>✍️ النص</label>
 <input type="text" id="textInput" placeholder="اكتب نص هنا">
 
 </div>
 
 <button onclick="downloadImage()">⬇ تحميل الصورة</button>
 
+<div class="footer">
+تصميم الصحفي هشام اليوسفي
+</div>
+
+</div>
+
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const frame = new Image();
+frame.crossOrigin = "anonymous";
 frame.src = "https://raw.githubusercontent.com/HESHAM2025M/Heham.2026/refs/heads/main/lv_0_%D9%A2%D9%A0%D9%A2%D9%A6%D9%A0%D9%A5%D9%A0%D9%A3%D9%A1%D9%A9%D9%A2%D9%A2%D9%A3%D9%A1.png";
 
 let img = new Image();
 let loaded = false;
 
-// إعدادات
 let scale = 1;
 let rotation = 0;
 let posX = 250;
@@ -86,7 +141,6 @@ let brightness = 100;
 let contrast = 100;
 let grayscale = false;
 
-// تحميل الصورة
 document.getElementById("upload").addEventListener("change", e => {
   const file = e.target.files[0];
   img.onload = () => {
@@ -96,39 +150,17 @@ document.getElementById("upload").addEventListener("change", e => {
   img.src = URL.createObjectURL(file);
 });
 
-// تحكمات
-document.getElementById("zoom").oninput = e => {
-  scale = e.target.value;
-  draw();
-};
-
-document.getElementById("rotate").oninput = e => {
-  rotation = e.target.value * Math.PI / 180;
-  draw();
-};
-
-document.getElementById("brightness").oninput = e => {
-  brightness = e.target.value;
-  draw();
-};
-
-document.getElementById("contrast").oninput = e => {
-  contrast = e.target.value;
-  draw();
-};
-
-document.getElementById("grayscale").onchange = e => {
-  grayscale = e.target.checked;
-  draw();
-};
-
+document.getElementById("zoom").oninput = e => { scale = e.target.value; draw(); };
+document.getElementById("rotate").oninput = e => { rotation = e.target.value * Math.PI/180; draw(); };
+document.getElementById("brightness").oninput = e => { brightness = e.target.value; draw(); };
+document.getElementById("contrast").oninput = e => { contrast = e.target.value; draw(); };
+document.getElementById("grayscale").onchange = e => { grayscale = e.target.checked; draw(); };
 document.getElementById("textInput").oninput = draw;
 
-// رسم
 function draw() {
   if (!loaded) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   ctx.save();
 
@@ -138,59 +170,54 @@ function draw() {
     ${grayscale ? "grayscale(100%)" : ""}
   `;
 
-  ctx.translate(posX, posY);
+  ctx.translate(posX,posY);
   ctx.rotate(rotation);
-  ctx.scale(scale, scale);
+  ctx.scale(scale,scale);
 
-  ctx.drawImage(img, -250, -250, 500, 500);
+  ctx.drawImage(img,-250,-250,500,500);
 
   ctx.restore();
 
-  // النص
   const text = document.getElementById("textInput").value;
   if (text) {
     ctx.fillStyle = "white";
-    ctx.font = "30px Arial";
+    ctx.font = "28px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(text, canvas.width/2, canvas.height - 30);
+    ctx.fillText(text, canvas.width/2, canvas.height - 20);
   }
 
-  // الإطار
-  ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(frame,0,0,canvas.width,canvas.height);
 }
 
-// السحب
 let dragging = false;
 
-canvas.addEventListener("mousedown", () => dragging = true);
-canvas.addEventListener("mouseup", () => dragging = false);
+canvas.addEventListener("mousedown", ()=> dragging=true);
+canvas.addEventListener("mouseup", ()=> dragging=false);
 
-canvas.addEventListener("mousemove", e => {
-  if (dragging) {
+canvas.addEventListener("mousemove", e=>{
+  if(dragging){
     posX = e.offsetX;
     posY = e.offsetY;
     draw();
   }
 });
 
-// الموبايل
-canvas.addEventListener("touchmove", e => {
+canvas.addEventListener("touchmove", e=>{
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-
   posX = touch.clientX - rect.left;
   posY = touch.clientY - rect.top;
-
   draw();
 });
 
-// تحميل
-function downloadImage() {
-  const link = document.createElement('a');
-  link.download = "frame.png";
-  link.href = canvas.toDataURL();
-  link.click();
+function downloadImage(){
+  canvas.toBlob(function(blob){
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "press-frame.png";
+    link.click();
+  });
 }
 </script>
 
