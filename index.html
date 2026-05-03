@@ -1,45 +1,11 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>اليوم العالمي لحرية الصحافة</title>
-
-<style>
-body {
-  font-family: Arial;
-  text-align: center;
-  background: #f5f5f5;
-}
-
-canvas {
-  border: 2px solid #ccc;
-  margin-top: 20px;
-  max-width: 90%;
-}
-
-button {
-  padding: 10px 20px;
-  margin-top: 15px;
-  cursor: pointer;
-}
-</style>
-</head>
-
-<body>
-
-<h2>📢 اليوم العالمي لحرية الصحافة</h2>
-
-<input type="file" id="upload" accept="image/*"><br>
-
-<canvas id="canvas" width="800" height="800"></canvas><br>
-
-<button onclick="downloadImage()">تحميل الصورة</button>
-
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const frame = new Image();
+
+// 👇 مهم جدًا
+frame.crossOrigin = "anonymous";
 frame.src = "https://i.imgur.com/7xTcBtQ.png";
 
 document.getElementById("upload").addEventListener("change", function(e) {
@@ -48,11 +14,18 @@ document.getElementById("upload").addEventListener("change", function(e) {
 
   img.onload = function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // رسم الصورة
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    frame.onload = () => {
+    // التأكد من تحميل الإطار
+    if (frame.complete) {
       ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-    };
+    } else {
+      frame.onload = () => {
+        ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+      };
+    }
   };
 
   img.src = URL.createObjectURL(file);
@@ -65,6 +38,3 @@ function downloadImage() {
   link.click();
 }
 </script>
-
-</body>
-</html>
