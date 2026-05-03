@@ -1,12 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>اليوم العالمي لحرية الصحافة</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f5f5f5;
+}
+
+h2 {
+  margin-top: 20px;
+}
+
+canvas {
+  border: 2px solid #ccc;
+  margin-top: 20px;
+  max-width: 90%;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 15px;
+  cursor: pointer;
+  font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📢 اليوم العالمي لحرية الصحافة</h2>
+<p>ارفع صورتك وأضف الإطار</p>
+
+<input type="file" id="upload" accept="image/*"><br>
+
+<canvas id="canvas" width="800" height="800"></canvas><br>
+
+<button onclick="downloadImage()">⬇ تحميل الصورة</button>
+
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+// 👇 رابط الإطار من GitHub (تم تصحيحه)
 const frame = new Image();
-
-// 👇 مهم جدًا
 frame.crossOrigin = "anonymous";
-frame.src = "https://i.imgur.com/7xTcBtQ.png";
+frame.src = "https://raw.githubusercontent.com/HESHAM2025M/Heham.2026/main/frame.png";
 
 document.getElementById("upload").addEventListener("change", function(e) {
   const file = e.target.files[0];
@@ -18,7 +60,7 @@ document.getElementById("upload").addEventListener("change", function(e) {
     // رسم الصورة
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // التأكد من تحميل الإطار
+    // رسم الإطار
     if (frame.complete) {
       ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
     } else {
@@ -33,8 +75,11 @@ document.getElementById("upload").addEventListener("change", function(e) {
 
 function downloadImage() {
   const link = document.createElement('a');
-  link.download = 'press.png';
+  link.download = 'press-freedom.png';
   link.href = canvas.toDataURL();
   link.click();
 }
 </script>
+
+</body>
+</html>
