@@ -2,42 +2,58 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>اليوم العالمي لحرية الصحافة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إطار حرية الصحافة</title>
 
 <style>
 body {
   font-family: Arial;
   text-align: center;
   background: #f5f5f5;
+  padding: 20px;
 }
 
 h2 {
-  margin-top: 20px;
+  color: #333;
 }
 
 canvas {
   border: 2px solid #ccc;
   margin-top: 20px;
-  max-width: 90%;
+  max-width: 100%;
+}
+
+input {
+  margin-top: 15px;
 }
 
 button {
   padding: 10px 20px;
   margin-top: 15px;
   cursor: pointer;
-  font-size: 16px;
+  background: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+button:hover {
+  background: #0056b3;
 }
 </style>
 </head>
 
 <body>
 
-<h2>📢 اليوم العالمي لحرية الصحافة</h2>
-<p>ارفع صورتك وأضف الإطار</p>
+<h2>📸 أضف صورتك داخل إطار حرية الصحافة</h2>
 
-<input type="file" id="upload" accept="image/*"><br>
+<input type="file" id="upload" accept="image/*">
 
-<canvas id="canvas" width="800" height="800"></canvas><br>
+<br>
+
+<canvas id="canvas" width="500" height="500"></canvas>
+
+<br>
 
 <button onclick="downloadImage()">⬇ تحميل الصورة</button>
 
@@ -45,38 +61,50 @@ button {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// 👇 رابط الإطار من GitHub (تم تصحيحه)
 const frame = new Image();
-frame.crossOrigin = "anonymous";
-frame.src = "https://raw.githubusercontent.com/HESHAM2025M/Heham.2026/main/frame.png";
 
+// ✅ رابط الإطار الجديد
+frame.src = "https://raw.githubusercontent.com/HESHAM2025M/Heham.2026/refs/heads/main/lv_0_%D9%A2%D9%A0%D9%A2%D9%A6%D9%A0%D9%A5%D9%A0%D9%A3%D9%A1%D9%A9%D9%A2%D9%A2%D9%A3%D9%A1.png";
+
+let userImage = null;
+
+// عند رفع الصورة
 document.getElementById("upload").addEventListener("change", function(e) {
   const file = e.target.files[0];
   const img = new Image();
 
   img.onload = function() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // رسم الصورة
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    // رسم الإطار
-    if (frame.complete) {
-      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-    } else {
-      frame.onload = () => {
-        ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-      };
-    }
+    userImage = img;
+    drawCanvas();
   };
 
   img.src = URL.createObjectURL(file);
 });
 
+// رسم الصورة + الإطار
+function drawCanvas() {
+  if (!userImage) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // رسم صورة المستخدم
+  ctx.drawImage(userImage, 0, 0, canvas.width, canvas.height);
+
+  // رسم الإطار فوقها
+  if (frame.complete) {
+    ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+  } else {
+    frame.onload = () => {
+      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+    };
+  }
+}
+
+// تحميل الصورة
 function downloadImage() {
   const link = document.createElement('a');
-  link.download = 'press-freedom.png';
-  link.href = canvas.toDataURL();
+  link.download = 'press-frame.png';
+  link.href = canvas.toDataURL("image/png");
   link.click();
 }
 </script>
